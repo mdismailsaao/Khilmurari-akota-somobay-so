@@ -1,0 +1,777 @@
+```html
+<!-- ... existing code ... -->
+    const DEFAULT_VISION_MISSION = {
+      vision: 'খিলমুরারী ও আশেপাশের এলাকার শ্রমজীবী, ক্ষুদ্র ব্যবসায়ী ও সাধারণ মানুষের মধ্যে সঞ্চয়ের অভ্যাস গড়ে তুলে একটি স্বাবলম্বী, ন্যায়ভিত্তিক ও সমৃদ্ধ সমবায় সমাজ বিনির্মাণ করা।',
+      mission: 'নিয়মিত ক্ষুদ্র সঞ্চয় সংগ্রহ, স্বল্প সুদে ও সহজ শর্তে সদস্যদের উৎপাদনশীল ও আত্মকর্মসংস্থানমূলক ঋণ প্রদান, এবং সম্পূর্ণ স্বচ্ছ ও ডিজিটাল হিসাব ব্যবস্থাপনার মাধ্যমে সদস্যদের আর্থিক নিরাপত্তা নিশ্চিত করা।',
+      objectives: [
+        'সদস্যদের মাঝে নিয়মিত সঞ্চয় ও পারস্পরিক সহযোগিতার মানসিকতা তৈরি করা।',
+        'অসাধু মহাজনের চড়া সুদের কবল থেকে সদস্যদের রক্ষা করে ন্যায্য লোন সুবিধা দেওয়া।',
+        'ক্ষুদ্র ব্যবসা, কৃষি, পশুপালন ও কুটির শিল্পে বিনিয়োগের মাধ্যমে কর্মসংস্থান বাড়ানো।',
+        'প্রতিটি লেনদেনের নির্ভুল হিসাব সংরক্ষণ ও বার্ষিক লভ্যাংশ/রিটার্ন বণ্টন নিশ্চিত করা।'
+      ],
+      updatedAt: '২০২৬-১১-০১',
+      updatedBy: 'মোঃ ইসমাইল'
+    };
+
+    const DEFAULT_LATE_FEE_RULES = {
+      graceDays: 5,
+      lateFeePerDay: 20,
+      maxLateFee: 500,
+      enabled: true
+    };
+
+    const DEFAULT_PAYMENT_CHANNELS = [
+      { id: 'PAY-BKASH', name: 'বিকাশ (bKash)', number: '01866-701155', type: 'পার্সোনাল / মার্চেন্ট', active: true },
+      { id: 'PAY-NAGAD', name: 'নগদ (Nagad)', number: '01866-701155', type: 'পার্সোনাল', active: true },
+      { id: 'PAY-ROCKET', name: 'রকেট (Rocket)', number: '01866-701155-7', type: 'পার্সোনাল', active: true },
+      { id: 'PAY-BANK', name: 'ব্যাংক ট্রান্সফার', number: 'সোনালী ব্যাংক • হিসাব নং: 44102019885', type: 'সমবায় হিসাব', active: true },
+      { id: 'PAY-CASH', name: 'নগদ টাকা (অফিস কাউন্টার)', number: 'খিলমুরারী বাজার সমিতি অফিস', type: 'সরাসরি ক্যাশ', active: true }
+    ];
+
+    function createInitialState() {
+      return {
+        currentUserId: null,
+        activeTab: 'dashboard',
+        visionMission: JSON.parse(JSON.stringify(DEFAULT_VISION_MISSION)),
+        lateFeeRules: JSON.parse(JSON.stringify(DEFAULT_LATE_FEE_RULES)),
+        paymentChannels: JSON.parse(JSON.stringify(DEFAULT_PAYMENT_CHANNELS)),
+        auditLogs: [
+          {
+            id: 'AUD-001',
+            timestamp: '২০২৬-১১-০১ ১০:০০',
+            actorName: 'মোঃ ইসমাইল',
+            actorRole: 'MAIN_ADMIN',
+            action: 'সিস্টেম ইনিশিয়ালাইজেশন',
+            details: 'খিলমুরারী একতা সমবায় সমিতির মূল ডাটা ও লক্ষ্য-উদ্দেশ্য সংরক্ষিত হয়েছে।'
+          }
+        ],
+        users: [
+          {
+            id: 'USR-001',
+            name: 'মোঃ ইসমাইল',
+            fatherOrHusband: 'মৃত আব্দুল করিম',
+            motherName: 'রাবিয়া খাতুন',
+            designation: 'প্রধান অ্যাডমিন ও সভাপতি',
+            mobile: '01866701155',
+            password: 'Md.ismail10',
+            nid: '1985471236985',
+            address: 'খিলমুরারী বাজার, ওয়ার্ড নং-০৪, সদর',
+            nominee: 'ফাতেমা বেগম (স্ত্রী)',
+            preferredPayment: 'বিকাশ (bKash)',
+            initialShare: 25000,
+            role: 'MAIN_ADMIN',
+            joinedDate: '২০২৩-০১-১০',
+            active: true
+          },
+// ... existing code ...
+    function migrateStateSchema(rawObj) {
+      const base = createInitialState();
+      if (!rawObj || typeof rawObj !== 'object') return base;
+      const mergedUsers = Array.isArray(rawObj.users) && rawObj.users.length
+        ? rawObj.users.map(u => ({
+            ...u,
+            designation: u.designation || (u.role === 'MAIN_ADMIN' ? 'প্রধান অ্যাডমিন ও সভাপতি' : u.role === 'ADMIN' ? 'কার্যনির্বাহী অ্যাডমিন' : 'সমবায় সদস্য'),
+            motherName: u.motherName || '—',
+            preferredPayment: u.preferredPayment || 'বিকাশ (bKash)',
+            active: u.active !== false
+          }))
+        : base.users;
+
+      return {
+        ...base,
+        ...rawObj,
+        visionMission: {
+          ...base.visionMission,
+          ...(rawObj.visionMission || {}),
+          objectives: Array.isArray(rawObj.visionMission?.objectives) && rawObj.visionMission.objectives.length
+            ? rawObj.visionMission.objectives
+            : base.visionMission.objectives
+        },
+        lateFeeRules: {
+          ...base.lateFeeRules,
+          ...(rawObj.lateFeeRules || {})
+        },
+        paymentChannels: Array.isArray(rawObj.paymentChannels) && rawObj.paymentChannels.length
+          ? rawObj.paymentChannels
+          : base.paymentChannels,
+        auditLogs: Array.isArray(rawObj.auditLogs) ? rawObj.auditLogs : base.auditLogs,
+        users: mergedUsers,
+        savings: Array.isArray(rawObj.savings) ? rawObj.savings : base.savings,
+        loans: Array.isArray(rawObj.loans) ? rawObj.loans : base.loans,
+        installments: Array.isArray(rawObj.installments) ? rawObj.installments : base.installments,
+        transactions: Array.isArray(rawObj.transactions) ? rawObj.transactions : base.transactions,
+        notices: Array.isArray(rawObj.notices) ? rawObj.notices : base.notices
+      };
+    }
+
+    function loadState() {
+// ... existing code ...
+    function getRoleLabel(role) {
+      if (role === 'MAIN_ADMIN') return 'প্রধান অ্যাডমিন';
+      if (role === 'ADMIN') return 'অ্যাডমিন';
+      return 'সদস্য';
+    }
+
+    function getRoleBadge(role, designation = '') {
+      const label = designation ? `${getRoleLabel(role)} • ${designation}` : getRoleLabel(role);
+      if (role === 'MAIN_ADMIN') {
+        return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">👑 ${escapeHtml(label)}</span>`;
+      }
+      if (role === 'ADMIN') {
+        return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-somity-100 text-somity-900 border border-somity-300">🛡️ ${escapeHtml(label)}</span>`;
+      }
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">👤 ${escapeHtml(label)}</span>`;
+    }
+// ... existing code ...
+      const fatherOrHusband = (fd.get('fatherOrHusband') || '').trim() || 'উল্লেখ নেই';
+      const motherName = (fd.get('motherName') || '').trim() || 'উল্লেখ নেই';
+      const mobile = (fd.get('mobile') || '').trim();
+      const nid = (fd.get('nid') || '').trim() || 'প্রযোজ্য নয়';
+      const address = (fd.get('address') || '').trim();
+      const nominee = (fd.get('nominee') || '').trim() || 'নমিনি নির্ধারিত নয়';
+      const preferredPayment = (fd.get('preferredPayment') || 'বিকাশ (bKash)').trim();
+      const initialShare = Math.max(0, Number(fd.get('initialShare')) || 0);
+      const password = fd.get('password') || '';
+      const requestedRole = fd.get('requestedRole') === 'ADMIN' ? 'ADMIN' : 'MEMBER';
+      const designation = requestedRole === 'ADMIN' ? ((fd.get('designation') || '').trim() || 'সহযোগী অ্যাডমিন') : 'সমবায় সদস্য';
+// ... existing code ...
+      const newUser = {
+        id: 'USR-' + String(state.users.length + 1).padStart(3, '0'),
+        name,
+        fatherOrHusband,
+        motherName,
+        designation,
+        mobile,
+        password,
+        nid,
+        address,
+        nominee,
+        preferredPayment,
+        initialShare,
+        role: requestedRole,
+        joinedDate: getTodayBengaliDate(),
+        active: true
+      };
+// ... existing code ...
+      const vm = state.visionMission || DEFAULT_VISION_MISSION;
+      const objectivesList = Array.isArray(vm.objectives) ? vm.objectives : [];
+      const canEditVision = isAdminUser(user);
+
+      const editButtonHtml = canEditVision ? `
+        <button type="button" onclick="openEditVisionModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-xs transition cursor-pointer">
+          ✏️ লক্ষ্য ও উদ্দেশ্য এডিট করুন
+        </button>
+      ` : '';
+
+      return `
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-100 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+              <span class="inline-block text-xs font-bold uppercase tracking-wider text-somity-700 bg-somity-50 px-3 py-1 rounded-full border border-somity-200">
+                সমিতির মূল দর্শন ও অঙ্গীকার
+              </span>
+              <h2 class="text-xl font-bold text-slate-900 mt-2">খিলমুরারী একতা সমবায় সমিতির লক্ষ্য ও উদ্দেশ্য</h2>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs text-slate-500">সর্বশেষ আপডেট: <strong>${escapeHtml(vm.updatedAt || '—')}</strong> (${escapeHtml(vm.updatedBy || 'অ্যাডমিন')})</span>
+              ${editButtonHtml}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
+            <div class="p-4 rounded-2xl bg-gradient-to-br from-somity-50/90 to-white border border-somity-200/70">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-8 h-8 rounded-xl bg-somity-600 text-white flex items-center justify-center text-sm font-bold">🎯</span>
+                <h3 class="text-base font-bold text-somity-950">আমাদের লক্ষ্য (Vision)</h3>
+              </div>
+              <p class="text-sm text-slate-700 leading-relaxed">${escapeHtml(vm.vision)}</p>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-gradient-to-br from-amber-50/80 to-white border border-amber-200/70">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-bold">🚀</span>
+                <h3 class="text-base font-bold text-slate-900">আমাদের উদ্দেশ্য (Mission)</h3>
+              </div>
+              <p class="text-sm text-slate-700 leading-relaxed">${escapeHtml(vm.mission)}</p>
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <h3 class="text-sm font-bold text-slate-800 mb-3">প্রধান কর্মপরিকল্পনা ও উদ্দেশ্যাবলী:</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              ${objectivesList.map((obj, idx) => `
+                <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/60">
+                  <span class="w-6 h-6 shrink-0 rounded-full bg-somity-700 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                    ${toBengaliDigits(idx + 1)}
+                  </span>
+                  <p class="text-sm text-slate-700 leading-relaxed">${escapeHtml(obj)}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openEditVisionModal() {
+      if (!isAdminUser()) {
+        showToast('শুধুমাত্র অ্যাডমিন লক্ষ্য ও উদ্দেশ্য সম্পাদনা করতে পারেন।', 'error');
+        return;
+      }
+      const vm = state.visionMission || DEFAULT_VISION_MISSION;
+      const currentObjectives = Array.isArray(vm.objectives) && vm.objectives.length
+        ? vm.objectives
+        : [''];
+
+      const bodyHtml = `
+        <form id="editVisionForm" onsubmit="saveVisionMission(event)" class="space-y-4 max-h-[68vh] overflow-y-auto pr-1">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">সমিতির লক্ষ্য (Vision) *</label>
+            <textarea name="vision" rows="3" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-somity-600 focus:ring-2 focus:ring-somity-600/15 outline-none text-sm">${escapeHtml(vm.vision)}</textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">সমিতির উদ্দেশ্য (Mission) *</label>
+            <textarea name="mission" rows="3" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-somity-600 focus:ring-2 focus:ring-somity-600/15 outline-none text-sm">${escapeHtml(vm.mission)}</textarea>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold text-slate-700">উদ্দেশ্যাবলী / কর্মপরিকল্পনা তালিকা</label>
+              <button type="button" onclick="addObjectiveInputRow()" class="px-2.5 py-1 rounded-lg bg-somity-50 hover:bg-somity-100 text-somity-800 border border-somity-200 text-xs font-bold cursor-pointer">
+                + নতুন উদ্দেশ্য যোগ করুন
+              </button>
+            </div>
+            <div id="visionObjectivesList" class="space-y-2">
+              ${currentObjectives.map((item, i) => `
+                <div class="objective-row flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-400 w-5 text-center">${toBengaliDigits(i + 1)}.</span>
+                  <input type="text" name="objectiveItem" value="${escapeHtml(item)}" placeholder="উদ্দেশ্য লিখুন..."
+                    class="flex-1 px-3 py-2 rounded-xl border border-slate-200 focus:border-somity-600 outline-none text-sm" />
+                  <button type="button" onclick="moveObjectiveRow(this, -1)" title="উপরে নিন" class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold cursor-pointer">↑</button>
+                  <button type="button" onclick="moveObjectiveRow(this, 1)" title="নিচে নিন" class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold cursor-pointer">↓</button>
+                  <button type="button" onclick="removeObjectiveRow(this)" title="মুছুন" class="px-2.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold cursor-pointer">✕</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </form>
+      `;
+
+      openModal('লক্ষ্য ও উদ্দেশ্য সম্পাদনা (অ্যাডমিন প্যানেল)', bodyHtml, [
+        {
+          label: 'বাতিল',
+          className: 'px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium',
+          onClick: () => closeModal()
+        },
+        {
+          label: 'সংরক্ষণ করুন',
+          className: 'px-5 py-2 rounded-xl bg-somity-600 hover:bg-somity-700 text-white font-bold shadow-sm',
+          onClick: () => {
+            const form = document.getElementById('editVisionForm');
+            if (form) form.requestSubmit();
+          }
+        }
+      ]);
+    }
+
+    function addObjectiveInputRow() {
+      const container = document.getElementById('visionObjectivesList');
+      if (!container) return;
+      const idx = container.querySelectorAll('.objective-row').length + 1;
+      const div = document.createElement('div');
+      div.className = 'objective-row flex items-center gap-2';
+      div.innerHTML = `
+        <span class="text-xs font-bold text-slate-400 w-5 text-center">${toBengaliDigits(idx)}.</span>
+        <input type="text" name="objectiveItem" value="" placeholder="নতুন উদ্দেশ্য লিখুন..."
+          class="flex-1 px-3 py-2 rounded-xl border border-slate-200 focus:border-somity-600 outline-none text-sm" />
+        <button type="button" onclick="moveObjectiveRow(this, -1)" title="উপরে নিন" class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold cursor-pointer">↑</button>
+        <button type="button" onclick="moveObjectiveRow(this, 1)" title="নিচে নিন" class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold cursor-pointer">↓</button>
+        <button type="button" onclick="removeObjectiveRow(this)" title="মুছুন" class="px-2.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold cursor-pointer">✕</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function moveObjectiveRow(btn, dir) {
+      const row = btn.closest('.objective-row');
+      const container = document.getElementById('visionObjectivesList');
+      if (!row || !container) return;
+      if (dir < 0 && row.previousElementSibling) {
+        container.insertBefore(row, row.previousElementSibling);
+      } else if (dir > 0 && row.nextElementSibling) {
+        container.insertBefore(row.nextElementSibling, row);
+      }
+      renumberObjectiveRows();
+    }
+
+    function removeObjectiveRow(btn) {
+      const container = document.getElementById('visionObjectivesList');
+      const row = btn.closest('.objective-row');
+      if (!container || !row) return;
+      if (container.querySelectorAll('.objective-row').length <= 1) {
+        const inp = row.querySelector('input[name="objectiveItem"]');
+        if (inp) inp.value = '';
+        return;
+      }
+      row.remove();
+      renumberObjectiveRows();
+    }
+
+    function renumberObjectiveRows() {
+      const container = document.getElementById('visionObjectivesList');
+      if (!container) return;
+      container.querySelectorAll('.objective-row').forEach((r, idx) => {
+        const num = r.querySelector('span');
+        if (num) num.textContent = `${toBengaliDigits(idx + 1)}.`;
+      });
+    }
+
+    function saveVisionMission(e) {
+      e.preventDefault();
+      if (!isAdminUser()) {
+        showToast('অনুমতি নেই।', 'error');
+        return;
+      }
+      const fd = new FormData(e.target);
+      const vision = (fd.get('vision') || '').trim();
+      const mission = (fd.get('mission') || '').trim();
+      const objectives = Array.from(e.target.querySelectorAll('input[name="objectiveItem"]'))
+        .map(inp => inp.value.trim())
+        .filter(Boolean);
+
+      if (!vision || !mission) {
+        showToast('লক্ষ্য এবং উদ্দেশ্য উভয়ই পূরণ করতে হবে।', 'error');
+        return;
+      }
+      if (!objectives.length) {
+        showToast('অন্তত একটি উদ্দেশ্য/কর্মপরিকল্পনা লিখুন।', 'error');
+        return;
+      }
+
+      const actor = getCurrentUser();
+      state.visionMission = {
+        vision,
+        mission,
+        objectives,
+        updatedAt: getTodayBengaliDate(),
+        updatedBy: actor ? actor.name : 'অ্যাডমিন'
+      };
+      recordAuditLog('লক্ষ্য ও উদ্দেশ্য সম্পাদনা', `${state.visionMission.updatedBy} সমিতির লক্ষ্য ও উদ্দেশ্য হালনাগাদ করেছেন।`);
+      saveState();
+      closeModal();
+      showToast('সমিতির লক্ষ্য ও উদ্দেশ্য সফলভাবে আপডেট করা হয়েছে।', 'success');
+      renderApp();
+    }
+// ... existing code ...
+    function renderPaymentsView() {
+      const channels = Array.isArray(state.paymentChannels) && state.paymentChannels.length
+        ? state.paymentChannels
+        : DEFAULT_PAYMENT_CHANNELS;
+      const canEditChannels = isAdminUser();
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl sm:text-2xl font-bold text-slate-900">📲 পেমেন্ট অপশন ও চ্যানেল তথ্য</h2>
+              <p class="text-sm text-slate-500">বিকাশ, নগদ, রকেট, ব্যাংক বা ক্যাশের মাধ্যমে চাঁদা ও কিস্তি পরিশোধের নির্ধারিত চ্যানেলসমূহ।</p>
+            </div>
+            ${canEditChannels ? `
+              <button type="button" onclick="openEditPaymentChannelsModal()" class="px-4 py-2.5 rounded-xl bg-somity-600 hover:bg-somity-700 text-white text-xs font-bold transition cursor-pointer">
+                ✏️ পেমেন্ট নম্বর এডিট করুন
+              </button>
+            ` : ''}
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${channels.map(ch => `
+              <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between gap-3">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="text-base font-bold text-slate-900">${escapeHtml(ch.name)}</span>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${ch.active !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">${ch.active !== false ? 'সক্রিয়' : 'বন্ধ'}</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mb-2">ধরন: <strong>${escapeHtml(ch.type || 'সমবায় চ্যানেল')}</strong></p>
+                  <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 font-mono text-sm font-bold text-slate-800 break-all">
+                    ${escapeHtml(ch.number)}
+                  </div>
+                </div>
+                <button type="button" onclick="copyTextToClipboard('${escapeHtml(ch.number)}', '${escapeHtml(ch.name)} নম্বর কপি হয়েছে!')" class="w-full py-2 rounded-xl bg-somity-50 hover:bg-somity-100 text-somity-800 border border-somity-200 text-xs font-bold transition cursor-pointer">
+                  📋 নম্বর কপি করুন
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function openEditPaymentChannelsModal() {
+      if (!isAdminUser()) {
+        showToast('শুধুমাত্র অ্যাডমিন পেমেন্ট চ্যানেল সম্পাদনা করতে পারেন।', 'error');
+        return;
+      }
+      const channels = Array.isArray(state.paymentChannels) ? state.paymentChannels : DEFAULT_PAYMENT_CHANNELS;
+      const bodyHtml = `
+        <form id="editPaymentChannelsForm" onsubmit="savePaymentChannels(event)" class="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
+          ${channels.map((ch, idx) => `
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <strong class="text-sm text-slate-900">${escapeHtml(ch.name)}</strong>
+                <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <input type="checkbox" name="chActive_${idx}" ${ch.active !== false ? 'checked' : ''} class="rounded text-somity-600" />
+                  সক্রিয়
+                </label>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input type="text" name="chNumber_${idx}" value="${escapeHtml(ch.number)}" placeholder="নম্বর বা হিসাব তথ্য" required
+                  class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm" />
+                <input type="text" name="chType_${idx}" value="${escapeHtml(ch.type || '')}" placeholder="চ্যানেলের ধরন"
+                  class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm" />
+              </div>
+            </div>
+          `).join('')}
+        </form>
+      `;
+
+      openModal('পেমেন্ট চ্যানেল তথ্য সম্পাদনা', bodyHtml, [
+        { label: 'বাতিল', className: 'px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium', onClick: () => closeModal() },
+        {
+          label: 'সংরক্ষণ করুন',
+          className: 'px-5 py-2 rounded-xl bg-somity-600 hover:bg-somity-700 text-white font-bold',
+          onClick: () => document.getElementById('editPaymentChannelsForm')?.requestSubmit()
+        }
+      ]);
+    }
+
+    function savePaymentChannels(e) {
+      e.preventDefault();
+      if (!isAdminUser()) return;
+      const fd = new FormData(e.target);
+      state.paymentChannels = state.paymentChannels.map((ch, idx) => ({
+        ...ch,
+        number: (fd.get(`chNumber_${idx}`) || ch.number).trim(),
+        type: (fd.get(`chType_${idx}`) || ch.type || '').trim(),
+        active: fd.get(`chActive_${idx}`) === 'on'
+      }));
+      recordAuditLog('পেমেন্ট চ্যানেল আপডেট', 'বিকাশ/নগদ/রকেট/ব্যাংক পেমেন্ট চ্যানেলের তথ্য হালনাগাদ করা হয়েছে।');
+      saveState();
+      closeModal();
+      showToast('পেমেন্ট চ্যানেল তথ্য সংরক্ষিত হয়েছে।', 'success');
+      renderApp();
+    }
+// ... existing code ...
+            <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h3 class="text-base font-bold text-slate-900">নিবন্ধিত সদস্যবৃন্দ (${toBengaliDigits(members.length)})</h3>
+                <input type="text" value="${escapeHtml(memberSearch)}" oninput="onMemberSearch(this.value)" placeholder="নাম, মোবাইল বা ঠিকানা দিয়ে খুঁজুন..."
+                  class="px-3.5 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-somity-600 w-full sm:w-64 no-print" />
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-slate-200 text-xs font-bold text-slate-500">
+                      <th class="py-2.5 pr-3">সদস্য ও পদবি</th>
+                      <th class="py-2.5 px-3">মোবাইল ও ঠিকানা</th>
+                      <th class="py-2.5 px-3 text-right">মোট সঞ্চয়</th>
+                      <th class="py-2.5 px-3 text-right">লোন বকেয়া</th>
+                      <th class="py-2.5 pl-3 text-right no-print">পাসবুক ও এডিট</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 text-sm">
+                    ${members.map(m => {
+                      const sav = getMemberSavingsTotal(m.id);
+                      const ln = getMemberLoanSummary(m.id);
+                      const canEditThisUser = canEditTargetUser(m);
+                      return `
+                        <tr class="hover:bg-slate-50/70 ${m.active === false ? 'opacity-60' : ''}">
+                          <td class="py-3 pr-3">
+                            <p class="font-bold text-slate-900">${escapeHtml(m.name)} ${m.active === false ? '<span class="text-xs text-rose-600">(নিষ্ক্রিয়)</span>' : ''}</p>
+                            <div class="mt-1">${getRoleBadge(m.role, m.designation)}</div>
+                          </td>
+                          <td class="py-3 px-3">
+                            <p class="text-xs font-semibold text-slate-800">${toBengaliDigits(m.mobile)}</p>
+                            <p class="text-xs text-slate-500">${escapeHtml(m.address)}</p>
+                          </td>
+                          <td class="py-3 px-3 text-right font-bold text-somity-700">${formatBDT(sav)}</td>
+                          <td class="py-3 px-3 text-right font-bold ${ln.totalRemaining > 0 ? 'text-rose-600' : 'text-slate-500'}">${formatBDT(ln.totalRemaining)}</td>
+                          <td class="py-3 pl-3 text-right no-print">
+                            <div class="inline-flex items-center gap-1.5 justify-end">
+                              <button type="button" onclick="openMemberPassbookModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-somity-50 hover:bg-somity-100 text-somity-800 border border-somity-200 text-xs font-bold transition cursor-pointer">
+                                📘 পাসবুক
+                              </button>
+                              ${canEditThisUser ? `
+                                <button type="button" onclick="openEditUserModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold transition cursor-pointer">
+                                  ✏️ এডিট
+                                </button>
+                              ` : ''}
+                            </div>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+// ... existing code ...
+    function canEditTargetUser(targetUser) {
+      const actor = getCurrentUser();
+      if (!actor || !targetUser) return false;
+      if (actor.role === 'MAIN_ADMIN') return true;
+      if (actor.role === 'ADMIN') {
+        return targetUser.role === 'MEMBER' || targetUser.id === actor.id;
+      }
+      return false;
+    }
+
+    function openEditUserModal(targetUserId) {
+      const target = state.users.find(u => u.id === targetUserId);
+      if (!target) {
+        showToast('সদস্য বা অ্যাডমিন খুঁজে পাওয়া যায়নি।', 'error');
+        return;
+      }
+      if (!canEditTargetUser(target)) {
+        showToast('এই ব্যবহারকারীর তথ্য সম্পাদনার অনুমতি আপনার নেই।', 'error');
+        return;
+      }
+
+      const actor = getCurrentUser();
+      const isActorMainAdmin = actor && actor.role === 'MAIN_ADMIN';
+      const isTargetMainAdmin = target.role === 'MAIN_ADMIN';
+
+      const bodyHtml = `
+        <form id="editUserForm" onsubmit="saveEditedUser(event, '${target.id}')" class="space-y-3.5 max-h-[68vh] overflow-y-auto pr-1 text-xs">
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <div>
+              <span class="text-slate-500">আইডি: <strong>${escapeHtml(target.id)}</strong></span>
+              <span class="ml-3 text-slate-500">যোগদান: <strong>${escapeHtml(target.joinedDate || '—')}</strong></span>
+            </div>
+            ${getRoleBadge(target.role, target.designation)}
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">পূর্ণ নাম *</label>
+              <input name="name" type="text" required value="${escapeHtml(target.name)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">মোবাইল নম্বর *</label>
+              <input name="mobile" type="text" required value="${escapeHtml(target.mobile)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">পিতা বা স্বামীর নাম</label>
+              <input name="fatherOrHusband" type="text" value="${escapeHtml(target.fatherOrHusband || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">মাতার নাম</label>
+              <input name="motherName" type="text" value="${escapeHtml(target.motherName || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">এনআইডি / ভোটার আইডি</label>
+              <input name="nid" type="text" value="${escapeHtml(target.nid || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">পদবি / দায়িত্ব</label>
+              <input name="designation" type="text" value="${escapeHtml(target.designation || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">ঠিকানা *</label>
+            <input name="address" type="text" required value="${escapeHtml(target.address || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">নমিনি ও সম্পর্ক</label>
+              <input name="nominee" type="text" value="${escapeHtml(target.nominee || '')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">প্রাথমিক শেয়ার / সঞ্চয় (৳)</label>
+              <input name="initialShare" type="number" min="0" step="10" value="${Number(target.initialShare) || 0}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">পাসওয়ার্ড *</label>
+              <input name="password" type="text" minlength="6" required value="${escapeHtml(target.password)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+            </div>
+            ${isActorMainAdmin && !isTargetMainAdmin ? `
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">অ্যাকাউন্ট রোল</label>
+                <select name="role" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-sm">
+                  <option value="MEMBER" ${target.role === 'MEMBER' ? 'selected' : ''}>সদস্য (MEMBER)</option>
+                  <option value="ADMIN" ${target.role === 'ADMIN' ? 'selected' : ''}>অ্যাডমিন (ADMIN)</option>
+                </select>
+              </div>
+            ` : `
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">পছন্দের পেমেন্ট মাধ্যম</label>
+                <input name="preferredPayment" type="text" value="${escapeHtml(target.preferredPayment || 'বিকাশ (bKash)')}" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+              </div>
+            `}
+          </div>
+
+          ${!isTargetMainAdmin ? `
+            <label class="inline-flex items-center gap-2 pt-1 font-bold text-slate-700 cursor-pointer">
+              <input type="checkbox" name="active" ${target.active !== false ? 'checked' : ''} class="rounded text-somity-600" />
+              অ্যাকাউন্ট সক্রিয় রাখুন
+            </label>
+          ` : ''}
+        </form>
+      `;
+
+      openModal(`তথ্য সম্পাদনা — ${target.name}`, bodyHtml, [
+        { label: 'বাতিল', className: 'px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium', onClick: () => closeModal() },
+        {
+          label: 'পরিবর্তন সংরক্ষণ করুন',
+          className: 'px-5 py-2 rounded-xl bg-somity-600 hover:bg-somity-700 text-white font-bold',
+          onClick: () => document.getElementById('editUserForm')?.requestSubmit()
+        }
+      ]);
+    }
+
+    function saveEditedUser(e, targetUserId) {
+      e.preventDefault();
+      const target = state.users.find(u => u.id === targetUserId);
+      if (!target || !canEditTargetUser(target)) {
+        showToast('সম্পাদনার অনুমতি নেই।', 'error');
+        return;
+      }
+
+      const fd = new FormData(e.target);
+      const name = (fd.get('name') || '').trim();
+      const mobile = (fd.get('mobile') || '').trim();
+      const password = fd.get('password') || '';
+      const address = (fd.get('address') || '').trim();
+
+      if (!name || !mobile || !address || password.length < 6) {
+        showToast('নাম, মোবাইল, ঠিকানা এবং কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন।', 'error');
+        return;
+      }
+
+      const duplicateMobile = state.users.some(u => u.id !== target.id && u.mobile.trim() === mobile);
+      if (duplicateMobile) {
+        showToast('এই মোবাইল নম্বরটি অন্য একজনের অ্যাকাউন্টে ব্যবহৃত হচ্ছে।', 'error');
+        return;
+      }
+
+      target.name = name;
+      target.mobile = mobile;
+      target.fatherOrHusband = (fd.get('fatherOrHusband') || '').trim() || 'উল্লেখ নেই';
+      target.motherName = (fd.get('motherName') || '').trim() || target.motherName || '—';
+      target.nid = (fd.get('nid') || '').trim() || 'প্রযোজ্য নয়';
+      target.designation = (fd.get('designation') || '').trim() || getRoleLabel(target.role);
+      target.address = address;
+      target.nominee = (fd.get('nominee') || '').trim() || 'নমিনি নির্ধারিত নয়';
+      target.initialShare = Math.max(0, Number(fd.get('initialShare')) || 0);
+      target.password = password;
+      if (fd.get('preferredPayment')) {
+        target.preferredPayment = (fd.get('preferredPayment') || '').trim();
+      }
+      if (target.role !== 'MAIN_ADMIN') {
+        target.active = fd.get('active') === 'on';
+        const nextRole = fd.get('role');
+        if (isMainAdmin() && (nextRole === 'ADMIN' || nextRole === 'MEMBER')) {
+          target.role = nextRole;
+        }
+      }
+
+      recordAuditLog('ব্যবহারকারীর তথ্য সম্পাদনা', `${target.name} (${target.id}, ${getRoleLabel(target.role)})-এর তথ্য আপডেট করা হয়েছে।`);
+      saveState();
+      closeModal();
+      showToast(`${target.name}-এর তথ্য সফলভাবে আপডেট হয়েছে।`, 'success');
+      renderApp();
+    }
+// ... existing code ...
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">পাসওয়ার্ড *</label>
+                    <input name="password" type="text" minlength="6" required placeholder="লগইন পাসওয়ার্ড দিন"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">পদবি / দায়িত্ব</label>
+                    <input name="designation" type="text" value="সহ-সভাপতি / অ্যাডমিন" placeholder="যেমন: সহ-সভাপতি, কোষাধ্যক্ষ"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ঠিকানা</label>
+                    <input name="address" type="text" value="খিলমুরারী, সদর"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm" />
+                  </div>
+                  <button type="submit" class="w-full py-3 px-4 rounded-xl bg-somity-600 hover:bg-somity-700 text-white font-bold text-sm transition cursor-pointer">
+                    + অ্যাডমিন যুক্ত করুন
+                  </button>
+// ... existing code ...
+              <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs">
+                <h3 class="text-base font-bold text-slate-900 mb-4">বর্তমান অ্যাডমিন প্যানেল (${toBengaliDigits(admins.length)})</h3>
+                <div class="space-y-3">
+                  ${admins.map(a => `
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <h4 class="text-sm font-bold text-slate-900">${escapeHtml(a.name)}</h4>
+                          ${getRoleBadge(a.role, a.designation)}
+                          ${a.active === false ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">নিষ্ক্রিয়</span>' : ''}
+                        </div>
+                        <p class="text-xs text-slate-600 mt-1">মোবাইল: <strong>${toBengaliDigits(a.mobile)}</strong> • ঠিকানা: ${escapeHtml(a.address)}</p>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        ${canEditTargetUser(a) ? `
+                          <button type="button" onclick="openEditUserModal('${a.id}')" class="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 text-xs font-bold cursor-pointer">
+                            ✏️ তথ্য এডিট
+                          </button>
+                        ` : ''}
+                        ${mainAdmin && a.role !== 'MAIN_ADMIN' ? `
+                          <button type="button" onclick="demoteAdminToMember('${a.id}')" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold cursor-pointer">
+                            সদস্য পদে নামান
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+// ... existing code ...
+      const name = (fd.get('name') || '').trim();
+      const mobile = (fd.get('mobile') || '').trim();
+      const password = fd.get('password') || '';
+      const designation = (fd.get('designation') || '').trim() || 'কার্যনির্বাহী অ্যাডমিন';
+      const address = (fd.get('address') || '').trim() || 'খিলমুরারী, সদর';
+
+      if (!name || !mobile || password.length < 6) {
+        showToast('অ্যাডমিনের নাম, মোবাইল নম্বর এবং কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন।', 'error');
+        return;
+      }
+
+      if (state.users.some(u => u.mobile.trim() === mobile)) {
+        showToast('এই মোবাইল নম্বর দিয়ে আগে থেকেই একটি অ্যাকাউন্ট রয়েছে।', 'error');
+        return;
+      }
+
+      const newAdmin = {
+        id: 'USR-' + String(state.users.length + 1).padStart(3, '0'),
+        name,
+        fatherOrHusband: 'উল্লেখ নেই',
+        motherName: '—',
+        designation,
+        mobile,
+        password,
+        nid: 'অ্যাডমিন অনুমোদিত',
+        address,
+        nominee: 'সমিতি মনোনীত',
+        preferredPayment: 'বিকাশ (bKash)',
+        initialShare: 0,
+        role: 'ADMIN',
+        joinedDate: getTodayBengaliDate(),
+        active: true
+      };
+// ... existing code ...
+```
